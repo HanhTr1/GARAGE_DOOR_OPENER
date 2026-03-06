@@ -8,5 +8,12 @@
     <mapping directory="$PROJECT_DIR$/pico-sdk/lib/lwip" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/pico-sdk/lib/mbedtls" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/pico-sdk/lib/tinyusb" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/src/cmake-build-debug/_deps/picotool-src" vcs="Git" />
+    <mapping directory="$USER_HOME$/pico/pico-sdk" vcs="Git" />
+    <mapping directory="$USER_HOME$/pico/pico-sdk/lib/btstack" vcs="Git" />
+    <mapping directory="$USER_HOME$/pico/pico-sdk/lib/cyw43-driver" vcs="Git" />
+    <mapping directory="$USER_HOME$/pico/pico-sdk/lib/lwip" vcs="Git" />
+    <mapping directory="$USER_HOME$/pico/pico-sdk/lib/mbedtls" vcs="Git" />
+    <mapping directory="$USER_HOME$/pico/pico-sdk/lib/tinyusb" vcs="Git" />
   </component>
 </project>

@@ -25,6 +25,7 @@ add_compile_options(-Wall
 add_executable(${PROJECT_NAME}
         main.cpp
         src/calibration.cpp
+        src/calibration.h
 
 )
 

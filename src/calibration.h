@@ -7,9 +7,10 @@
 #include "hardware/gpio.h"
 #include <stdio.h>
 #include "pico/stdlib.h"
-#include "pico/time.h"
 #include "iostream"
 #include "pico/util/queue.h"
+#include <cstdint>
+
 using namespace std;
 
 
@@ -22,8 +23,8 @@ using namespace std;
 #define C_PIN 3
 #define D_PIN 2
 
-#define ROT_A 14
-#define ROT_B 15
+#define ROT_A 4
+#define ROT_B 5
 
 #define LIMIT_TOP 27
 #define LIMIT_BOTTOM 28
@@ -40,22 +41,21 @@ public:
     Calibration();
     void init();
     void calibration_process();
-    int get_average_steps();
-    bool is_calibrated();
     void step_motor(int direction);
     void set_coils(int step);
     static int encoder_steps;
     static int motor_step;
+    static int step_counts;
+    static int motor_since_encoder;
+    static int expected_ratio;
     static void encoder_isr(uint gpio, uint32_t events);
-    void update_encoder();
 
 private:
     int current_step;
     int average_steps;
     bool calibrated;
-    int previous_state;
 
-    const int stepper_pins[PIN_AMOUNT] = {A_PIN, B_PIN, C_PIN, D_PIN};
+    const uint stepper_pins[PIN_AMOUNT] = {A_PIN, B_PIN, C_PIN, D_PIN};
     const int sequences[SEQUENCES_AMOUNT][PIN_AMOUNT] = {
         {1,0,0,0},
         {1,1,0,0},
@@ -66,7 +66,7 @@ private:
         {0,0,0,1},
         {1,0,0,1}
     };
-    static queue_t step_queue;
+    static queue_t encoder_queue;
 };
 
 #endif
