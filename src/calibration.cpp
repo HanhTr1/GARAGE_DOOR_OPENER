@@ -27,17 +27,6 @@ void Calibration::init() {
     gpio_set_dir(LIMIT_BOTTOM, GPIO_IN);
     gpio_pull_up(LIMIT_BOTTOM);
 
-    gpio_init(SW0);
-    gpio_set_dir(SW0, GPIO_IN);
-    gpio_pull_up(SW0);
-
-    gpio_init(SW1);
-    gpio_set_dir(SW1, GPIO_IN);
-    gpio_pull_up(SW1);
-
-    gpio_init(SW2);
-    gpio_set_dir(SW2, GPIO_IN);
-    gpio_pull_up(SW2);
 }
 
 void Calibration::set_coils(int step) {
@@ -85,6 +74,18 @@ void Calibration::step_motor(int direction) {
     set_coils(current_step);
 }
 
+bool Calibration::door_stuck()
+{
+    if (motor_since_encoder > expected_ratio * 4)
+    {
+        cout << "error: Door stuck detected!" << endl;
+        set_coils(0);
+        calibrated =false; //just added
+        return true;
+    }
+    return false;
+}
+
 int Calibration::motor_since_encoder = 0;
 int Calibration::expected_ratio = 204;
 void Calibration::calibration_process() {
@@ -93,79 +94,78 @@ void Calibration::calibration_process() {
     while (gpio_get(SW0) != 0 || gpio_get(SW2) != 0) {
     }
 
-    queue_init(&encoder_queue, sizeof(int), 100);
-    gpio_set_irq_enabled_with_callback(ROT_A, GPIO_IRQ_EDGE_RISE, true, &encoder_isr);
-    cout << "Finding the top limit...\n";
-    while (gpio_get(LIMIT_TOP) != 0) {
-        step_motor(1);
-        sleep_ms(1);
-    }
-    cout <<"Door is now at TOP. Starting calibration...\n";
-
-    encoder_steps = 0;
-    int counts[CALIB_TIMES];
-    for (int i = 0; i < CALIB_TIMES; i++) {
-        cout << "Round " << i+1 << "..\n";
-        counts[i]=0;
-        int down_steps = 0;
-        int up_steps = 0;
-        encoder_steps = 0;
-        while (gpio_get(LIMIT_BOTTOM) != 0) {
-            step_motor(-1);
-            sleep_ms(1);
-            int q_step = 0; //set =0 to correct round 1 downsteps
-            while (queue_try_remove(&encoder_queue, &q_step))
-            {
-                encoder_steps += abs(q_step);
-                motor_since_encoder = 0;
-            }
-            if (motor_since_encoder > expected_ratio * 4)
-            {
-                cout << "error: Door stuck detected!" << endl;
-                set_coils(0);
-                calibrated =false; //just added
-                return;
-            }
-        }
-        down_steps = encoder_steps;
-        cout << "Down steps (encoder): " << encoder_steps << " steps\n";
-
-        encoder_steps = 0;
-        while (gpio_get(LIMIT_TOP) != 0)
-        {
+    while (!calibrated)
+    {
+        queue_init(&encoder_queue, sizeof(int), 100);
+        gpio_set_irq_enabled_with_callback(ROT_A, GPIO_IRQ_EDGE_RISE, true, &encoder_isr);
+        cout << "Finding the top limit...\n";
+        while (gpio_get(LIMIT_TOP) != 0) {
             step_motor(1);
             sleep_ms(1);
-            int q_step = 0; //just added =0
-            while (queue_try_remove(&encoder_queue, &q_step))
-            {
-                encoder_steps+= abs(q_step);
-                motor_since_encoder = 0;
+        }
+        cout <<"Door is now at TOP. Starting calibration...\n";
+
+        encoder_steps = 0;
+        int counts[CALIB_TIMES];
+        for (int i = 0; i < CALIB_TIMES; i++) {
+            cout << "Round " << i+1 << "..\n";
+            counts[i]=0;
+            int down_steps = 0;
+            int up_steps = 0;
+            encoder_steps = 0;
+            motor_step = 0;
+            while (gpio_get(LIMIT_BOTTOM) != 0) {
+                step_motor(-1);
+                sleep_ms(1);
+                int q_step = 0; //set =0 to correct round 1 downsteps
+                while (queue_try_remove(&encoder_queue, &q_step))
+                {
+                    encoder_steps += abs(q_step);
+                    motor_since_encoder = 0;
+                }
+                if (door_stuck()) {
+                    return;
+                }
+
             }
-            if (motor_since_encoder > expected_ratio * 4)
+            down_steps = encoder_steps;
+            cout << "Down steps (encoder): " << encoder_steps << " steps\n";
+
+            encoder_steps = 0;
+
+            while (gpio_get(LIMIT_TOP) != 0)
             {
-                cout << "error: Door stuck detected!" << endl;
-                set_coils(0);
-                calibrated = false; //just added
-                return;
+                step_motor(1);
+                sleep_ms(1);
+                int q_step = 0; //just added =0
+                while (queue_try_remove(&encoder_queue, &q_step))
+                {
+                    encoder_steps+= abs(q_step);
+                    motor_since_encoder = 0;
+                }
+                if (door_stuck()) {
+                    return;
+                }
             }
+
+            up_steps = encoder_steps;
+            cout << "UP steps (encoder): " << encoder_steps << " steps\n";
+
+            counts[i] = (down_steps + up_steps)/2;
+
+            cout << "Total steps : " << counts[i] << endl;
+            cout << "Motor steps: "<< motor_step << endl;
         }
 
-        up_steps = encoder_steps;
-        cout << "UP steps (encoder): " << encoder_steps << " steps\n";
-
-        counts[i] = down_steps + up_steps;
-        cout << "Total steps : " << counts[i] << endl;
-        cout << "Motor steps: "<< motor_step << endl;
+        int sum = 0;
+        for (int count : counts) {
+            sum += count;
+        }
+        average_steps = sum / CALIB_TIMES;
+        expected_ratio = motor_step /average_steps;
+        calibrated = true;
+        cout << "Calibration finished.\n";
+        cout << "Average encoder steps: " << average_steps << endl;
     }
-
-    int sum = 0;
-    for (int count : counts) {
-        sum += count;
-    }
-    average_steps = sum / CALIB_TIMES;
-    expected_ratio = motor_step /average_steps;
-    calibrated = true;
-    cout << "Calibration finished.\n";
-    cout << "Average encoder steps: " << average_steps << endl;
 }
 

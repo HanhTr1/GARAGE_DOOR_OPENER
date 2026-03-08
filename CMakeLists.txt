@@ -7,6 +7,7 @@ set(PICO_BOARD pico_w)
 # Include build functions from Pico SDK
 include($ENV{PICO_SDK_PATH}/external/pico_sdk_import.cmake)
 
+
 # Set name of project (as PROJECT_NAME) and C/C   standards
 project(GARAGE_DOOR_OPENER C CXX ASM)
 set(CMAKE_C_STANDARD 11)
@@ -26,8 +27,26 @@ add_executable(${PROJECT_NAME}
         main.cpp
         src/calibration.cpp
         src/calibration.h
+        src/button.cpp
+        src/mqtt.h
+        src/mqtt.cpp
+        pico-modbus/mqtt/IPStack.cpp
+        pico-modbus/mqtt/Countdown.cpp
+        pico-modbus/paho.mqtt.embedded-c/MQTTPacket/src/MQTTConnectClient.c
+        pico-modbus/paho.mqtt.embedded-c/MQTTPacket/src/MQTTDeserializePublish.c
+        pico-modbus/paho.mqtt.embedded-c/MQTTPacket/src/MQTTFormat.c
+        pico-modbus/paho.mqtt.embedded-c/MQTTPacket/src/MQTTPacket.c
+        pico-modbus/paho.mqtt.embedded-c/MQTTPacket/src/MQTTSerializePublish.c
+        pico-modbus/paho.mqtt.embedded-c/MQTTPacket/src/MQTTSubscribeClient.c
+        pico-modbus/paho.mqtt.embedded-c/MQTTPacket/src/MQTTUnsubscribeClient.c
+        pico-modbus/display/i2c_device.h
+        pico-modbus/i2c/PicoI2CBus.cpp
+        pico-modbus/i2c/PicoI2CBus.h
+        pico-modbus/i2c/PicoI2CDevice.cpp
+        pico-modbus/i2c/PicoI2CDevice.h
 
 )
+
 
 # Create map/bin/hex/uf2 files
 pico_add_extra_outputs(${PROJECT_NAME})
@@ -38,6 +57,19 @@ target_link_libraries(${PROJECT_NAME}
         hardware_pwm
         hardware_gpio
         hardware_i2c
+        pico_cyw43_arch_lwip_poll
+)
+
+target_include_directories(${PROJECT_NAME} PRIVATE
+        pico-modbus/mqtt
+        pico-modbus/paho.mqtt.embedded-c/MQTTPacket/src
+        pico-modbus/paho.mqtt.embedded-c/MQTTClient/src
+        pico-modbus
+        pico-modbus/display/fonts
+        pico-modbus/display
+        pico-modbus/i2c
+
+        ${CMAKE_CURRENT_LIST_DIR}/include
 )
 
 # Disable usb output, enable uart output

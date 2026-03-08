@@ -42,6 +42,7 @@ public:
     void init();
     void calibration_process();
     void step_motor(int direction);
+    bool door_stuck();
     void set_coils(int step);
     static int encoder_steps;
     static int motor_step;
