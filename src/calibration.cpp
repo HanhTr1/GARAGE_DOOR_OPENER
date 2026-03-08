@@ -113,7 +113,7 @@ void Calibration::calibration_process() {
         while (gpio_get(LIMIT_BOTTOM) != 0) {
             step_motor(-1);
             sleep_ms(1);
-            int q_step;
+            int q_step = 0; //set =0 to correct round 1 downsteps
             while (queue_try_remove(&encoder_queue, &q_step))
             {
                 encoder_steps += abs(q_step);
@@ -123,6 +123,7 @@ void Calibration::calibration_process() {
             {
                 cout << "error: Door stuck detected!" << endl;
                 set_coils(0);
+                calibrated =false; //just added
                 return;
             }
         }
@@ -134,7 +135,7 @@ void Calibration::calibration_process() {
         {
             step_motor(1);
             sleep_ms(1);
-            int q_step;
+            int q_step = 0; //just added =0
             while (queue_try_remove(&encoder_queue, &q_step))
             {
                 encoder_steps+= abs(q_step);
@@ -144,6 +145,7 @@ void Calibration::calibration_process() {
             {
                 cout << "error: Door stuck detected!" << endl;
                 set_coils(0);
+                calibrated = false; //just added
                 return;
             }
         }
