@@ -1,11 +1,11 @@
-# Set minimum required version of CMake
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 4.0)
 
-# Set board type because we are building for PicoW
 set(PICO_BOARD pico_w)
 
-# Include build functions from Pico SDK
 include($ENV{PICO_SDK_PATH}/external/pico_sdk_import.cmake)
+set(PICO_NO_PICOTOOL 1)
+project(garage-test C CXX ASM)
+set(CMAKE_CXX_STANDARD 20)
 
 
 # Set name of project (as PROJECT_NAME) and C/C   standards
@@ -22,7 +22,6 @@ add_compile_options(-Wall
         -Wno-maybe-uninitialized
 )
 
-# Tell CMake where to find the executable source file
 add_executable(${PROJECT_NAME}
         main.cpp
         src/calibration.cpp
@@ -30,6 +29,15 @@ add_executable(${PROJECT_NAME}
         src/button.cpp
         src/mqtt.h
         src/mqtt.cpp
+        ../garage-test/door/Door.cpp
+        motor/StepperMotor.cpp
+        limits/LimitSwitch.cpp
+        encoder/Encoder.cpp
+        input/Button.cpp
+        network/GarageMQTT.cpp
+        eeprom/Eeprom.cpp
+        led/Led.cpp
+        ../garage-test/door/DoorState.cpp
         pico-modbus/mqtt/IPStack.cpp
         pico-modbus/mqtt/Countdown.cpp
         pico-modbus/paho.mqtt.embedded-c/MQTTPacket/src/MQTTConnectClient.c
@@ -50,10 +58,19 @@ add_executable(${PROJECT_NAME}
 
 # Create map/bin/hex/uf2 files
 pico_add_extra_outputs(${PROJECT_NAME})
+        pico-modbus/i2c/PicoI2CBus.cpp
+        pico-modbus/i2c/PicoI2CDevice.cpp
+
+)
+
+target_include_directories(${PROJECT_NAME} PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}
+)
 
 # Link to pico_stdlib (gpio, time, etc. functions)
 target_link_libraries(${PROJECT_NAME}
         pico_stdlib
+        pico_time
         hardware_pwm
         hardware_gpio
         hardware_i2c
@@ -70,8 +87,21 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         pico-modbus/i2c
 
         ${CMAKE_CURRENT_LIST_DIR}/include
+        hardware_rtc
+        pico_cyw43_arch_lwip_poll
 )
+target_include_directories(${PROJECT_NAME} PRIVATE
+        pico-modbus/mqtt
+        pico-modbus/paho.mqtt.embedded-c/MQTTPacket/src
+        pico-modbus/paho.mqtt.embedded-c/MQTTClient/src
+        pico-modbus
+        pico-modbus/display/fonts
+        pico-modbus/display
+        pico-modbus/i2c
 
+        ${CMAKE_CURRENT_LIST_DIR}/include
+)
+pico_add_extra_outputs(${PROJECT_NAME})
 # Disable usb output, enable uart output
 pico_enable_stdio_usb(${PROJECT_NAME} 0)
 pico_enable_stdio_uart(${PROJECT_NAME} 1)
